@@ -8,7 +8,7 @@ find_path(MYSQL_INCLUDE_DIR
     include
 )
 
-include_directories(${MYSQL_INCLUDE_DIR})
+include_directories(${MYSQL_INCLUDE_DIR}/mysql)
 
 add_executable(owdatalogger owdatalogger.c dictionary.c iniparser.c) 
 
