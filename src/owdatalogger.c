@@ -90,8 +90,14 @@ MYSQL *init_db(void)
 	if (mysql_real_connect(con, hostname, user, password, database, 0, NULL, 0) == NULL) 
 	{
 		syslog(LOG_ALERT,  "%s\n", mysql_error(con));
-		mysql_close(con);
-		return NULL;
+		syslog(LOG_ALERT,  "Install database owdatalogger\n");
+		system("mysql < /usr/share/owdatalogger.sql");
+		
+		if (mysql_real_connect(con, hostname, user, password, database, 0, NULL, 0) == NULL) 
+		{
+			mysql_close(con);
+			return NULL;
+		}
 	}
 	return con;
 }
