@@ -45,7 +45,7 @@ int init_senors_list(MYSQL *con)
 	
 	if (mysql_query(con, "SELECT * FROM sensors")) 
 	{
-		fprintf(stderr, "%s\n", mysql_error(con));
+		syslog(LOG_ALERT, "%s\n", mysql_error(con));
 		mysql_close(con);
 		return 3;
 	}
@@ -54,7 +54,7 @@ int init_senors_list(MYSQL *con)
 	
 	if (result == NULL) 
 	{
-		fprintf(stderr, "%s\n", mysql_error(con));
+		syslog(LOG_ALERT, "%s\n", mysql_error(con));
 		mysql_close(con);
 		return 4;
 	}
@@ -83,13 +83,13 @@ MYSQL *init_db(void)
 	
 	if (con == NULL)
 	{
-		fprintf(stderr, "mysql_init() failed\n");
+		syslog(LOG_ALERT,  "mysql_init() failed\n");
 		return NULL;
 	}
 	
 	if (mysql_real_connect(con, hostname, user, password, database, 0, NULL, 0) == NULL) 
 	{
-		fprintf(stderr, "%s\n", mysql_error(con));
+		syslog(LOG_ALERT,  "%s\n", mysql_error(con));
 		mysql_close(con);
 		return NULL;
 	}
@@ -139,7 +139,7 @@ int main(void)
 	openlog("owdatalogger",LOG_PID,LOG_DAEMON);
 	
 	/* Daemon-specific initialization goes here */
-	config = iniparser_load("owdatalogger.cfg");
+	config = iniparser_load("/etc/owdatalogger.cfg");
 	owportstr = iniparser_getstring(config,"OWFS:port","4304");
 	owport = atoi(owportstr);
 
