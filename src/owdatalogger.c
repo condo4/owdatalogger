@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <syslog.h>
 #include <signal.h>
+#include <stdarg.h>
 #include "iniparser.h"
 
 #define RUNNING_DIR	"/tmp"
@@ -24,15 +25,55 @@ struct sensor {
 
 struct sensor *sensors = NULL;
 dictionary* config;
+unsigned int isdaemon = 0;
+
+#define LOG_DEBUG2 (LOG_DEBUG + 1)
+
+
+int prlog(unsigned int lvl, char *fmt, ...)
+{
+	int ret;
+	
+	if(fmt == NULL) 
+	{
+		printf("FORMAT IS NULL !!!\n");
+		return -1;
+	}
+	
+	/* Declare a va_list type variable */
+	va_list myargs;
+
+	/* Initialise the va_list variable with the ... after fmt */
+	va_start(myargs, fmt);
+
+	/* Forward the '...' to vprintf */
+	if(isdaemon)
+	{
+		if(lvl <= LOG_DEBUG)
+		{
+			syslog(lvl,fmt,myargs);
+		}
+	}
+	else
+	{
+		ret = vprintf(fmt, myargs);
+		printf("\n");
+	}
+
+	/* Clean up the va_list */
+	va_end(myargs);
+
+	return ret;
+}
 
 void signal_handler(int sig)
 {
 	switch(sig) {
 		case SIGHUP:
-			syslog(LOG_INFO, "hangup signal catched");
+			prlog(LOG_INFO, "hangup signal catched");
 			break;
 		case SIGTERM:
-			syslog(LOG_INFO,"terminate signal catched");
+			prlog(LOG_INFO,"terminate signal catched");
 			exit(0);
 			break;
 	}
@@ -45,7 +86,7 @@ int init_senors_list(MYSQL *con)
 	
 	if (mysql_query(con, "SELECT * FROM sensors")) 
 	{
-		syslog(LOG_ALERT, "%s\n", mysql_error(con));
+		prlog(LOG_ALERT, "%s\n", mysql_error(con));
 		mysql_close(con);
 		return 3;
 	}
@@ -54,7 +95,7 @@ int init_senors_list(MYSQL *con)
 	
 	if (result == NULL) 
 	{
-		syslog(LOG_ALERT, "%s\n", mysql_error(con));
+		prlog(LOG_ALERT, "%s\n", mysql_error(con));
 		mysql_close(con);
 		return 4;
 	}
@@ -83,14 +124,15 @@ MYSQL *init_db(void)
 	
 	if (con == NULL)
 	{
-		syslog(LOG_ALERT,  "mysql_init() failed\n");
+		prlog(LOG_ALERT,  "mysql_init() failed\n");
 		return NULL;
 	}
 	
 	if (mysql_real_connect(con, hostname, user, password, database, 0, NULL, 0) == NULL) 
 	{
-		syslog(LOG_ALERT,  "%s\n", mysql_error(con));
-		syslog(LOG_ALERT,  "Install database owdatalogger\n");
+		char *error = mysql_error(con);
+		if(error) prlog(LOG_ALERT,  "%s\n", error);
+		prlog(LOG_ALERT,  "Install database owdatalogger\n");
 		system("mysql < /usr/share/owdatalogger.sql");
 		
 		if (mysql_real_connect(con, hostname, user, password, database, 0, NULL, 0) == NULL) 
@@ -128,9 +170,12 @@ void daemonize()
 	signal(SIGTTIN,SIG_IGN);
 	signal(SIGHUP,signal_handler); /* catch hangup signal */
 	signal(SIGTERM,signal_handler); /* catch kill signal */
+	/* Open any logs here */
+	isdaemon = 1;
+	openlog("owdatalogger",LOG_PID,LOG_DAEMON);
 }
 
-int main(void) 
+int main(int argc, char *argv[])
 {
 	char *tmp;
 	size_t len = 256;
@@ -139,10 +184,10 @@ int main(void)
 	char *owportstr;
 	unsigned int owport;
 	
-	daemonize();
-	
-	/* Open any logs here */        
-	openlog("owdatalogger",LOG_PID,LOG_DAEMON);
+	if(argc < 2)
+	{
+		daemonize();
+	}
 	
 	/* Daemon-specific initialization goes here */
 	config = iniparser_load("/etc/owdatalogger.cfg");
@@ -153,7 +198,7 @@ int main(void)
 	init_senors_list(con);
 	OW_init("4304");
 	
-	syslog(LOG_INFO, "Starting OW data logger");
+	prlog(LOG_INFO, "Starting OW data logger");
 	
 	/* The Big Loop */
 	while (1) {
@@ -165,10 +210,11 @@ int main(void)
 			{
 				char query[128]; 
 				OW_get(list->path, &tmp, &len);
+				prlog(LOG_DEBUG2, "Read %s: %f", list->path, atof(tmp));
 				snprintf(query, 128, "INSERT INTO measures (path,value) VALUES('%s', '%f')", list->path, atof(tmp));
 				if (mysql_query(con, query))
 				{
-					syslog(LOG_ALERT, "ERROR in query %s\n",query);
+					prlog(LOG_ALERT, "ERROR in query %s\n",query);
 				}
 				free(tmp);
 			}
