@@ -116,6 +116,7 @@ int init_senors_list(MYSQL *con)
 
 MYSQL *init_db(void)
 {
+	unsigned int retry = 0;
 	char *hostname = iniparser_getstring(config,"Database:hostname","localhost");
 	char *user = iniparser_getstring(config,"Database:user","weather");
 	char *password = iniparser_getstring(config,"Database:password","weather43");
@@ -128,18 +129,18 @@ MYSQL *init_db(void)
 		return NULL;
 	}
 	
-	if (mysql_real_connect(con, hostname, user, password, database, 0, NULL, 0) == NULL) 
+	while (mysql_real_connect(con, hostname, user, password, database, 0, NULL, 0) == NULL) 
 	{
-		char *error = mysql_error(con);
-		if(error) prlog(LOG_ALERT,  "%s\n", error);
-		prlog(LOG_ALERT,  "Install database owdatalogger\n");
-		system("mysql < /usr/share/owdatalogger.sql");
-		
-		if (mysql_real_connect(con, hostname, user, password, database, 0, NULL, 0) == NULL) 
+		retry++;
+		if(retry > 5)
 		{
+			prlog(LOG_ALERT,  "Failed to install database owdatalogger\n");
 			mysql_close(con);
 			return NULL;
 		}
+		sleep(5);
+		prlog(LOG_ALERT,  "Install database owdatalogger %i\n",retry);
+		system("mysql < /usr/share/owdatalogger.sql");
 	}
 	return con;
 }
