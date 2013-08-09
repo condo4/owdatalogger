@@ -84,6 +84,7 @@ int init_senors_list(MYSQL *con)
 	int i;
 	MYSQL_ROW row;
 	
+	prlog(LOG_INFO, "Init OW data logger sensors list");
 	if (mysql_query(con, "SELECT * FROM sensors")) 
 	{
 		prlog(LOG_ALERT, "%s\n", mysql_error(con));
@@ -138,9 +139,9 @@ MYSQL *init_db(void)
 			mysql_close(con);
 			return NULL;
 		}
-		sleep(5);
 		prlog(LOG_ALERT,  "Install database owdatalogger %i\n",retry);
 		system("mysql < /usr/share/owdatalogger.sql");
+		sleep(5);
 	}
 	return con;
 }
@@ -196,6 +197,10 @@ int main(int argc, char *argv[])
 	owport = atoi(owportstr);
 
 	con = init_db();
+	if(con == NULL)
+	{
+		prlog(LOG_ALERT, "Failed to start OW data logger, DB failed");
+	}
 	init_senors_list(con);
 	OW_init("4304");
 	
