@@ -19,6 +19,7 @@
 
 struct sensor {
 	char path[256];
+	unsigned int ratio;
 	unsigned int time;
 	struct sensor *next;
 };
@@ -85,7 +86,7 @@ int init_senors_list(MYSQL *con)
 	MYSQL_ROW row;
 	
 	prlog(LOG_INFO, "Init OW data logger sensors list");
-	if (mysql_query(con, "SELECT * FROM sensors")) 
+	if (mysql_query(con, "SELECT path, ratio, time FROM sensors")) 
 	{
 		prlog(LOG_ALERT, "%s\n", mysql_error(con));
 		mysql_close(con);
@@ -105,7 +106,8 @@ int init_senors_list(MYSQL *con)
 	{
 		struct sensor *chain = (struct sensor *)malloc(sizeof(struct sensor));
 		strncpy(chain->path,row[0],254);
-		chain->time = atoi(row[1]);
+		chain->ratio = atoi(row[1]);
+		chain->time = atoi(row[2]);
 		chain->next = sensors;
 		sensors = chain;
 	}
@@ -217,7 +219,7 @@ int main(int argc, char *argv[])
 				char query[128]; 
 				OW_get(list->path, &tmp, &len);
 				prlog(LOG_DEBUG2, "Read %s: %f", list->path, atof(tmp));
-				snprintf(query, 128, "INSERT INTO measures (path,value) VALUES('%s', '%f')", list->path, atof(tmp));
+				snprintf(query, 128, "INSERT INTO measures (path,value) VALUES('%s', '%f')", list->path, atof(tmp) * list->ratio);
 				if (mysql_query(con, query))
 				{
 					prlog(LOG_ALERT, "ERROR in query %s\n",query);

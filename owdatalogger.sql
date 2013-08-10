@@ -3,7 +3,9 @@ CREATE DATABASE weather;
 USE weather;
 
 CREATE TABLE sensors (
+	name CHAR(64) NOT NULL,
 	path CHAR(64) NOT NULL,
+	ratio INT NOT NULL DEFAULT 1,
 	delay MEDIUMINT,
 	PRIMARY KEY (path)
 );
@@ -16,10 +18,5 @@ CREATE TABLE measures (
 	value FLOAT NOT NULL,
 	PRIMARY KEY (id)
 );
-
-INSERT INTO sensors (path,delay) VALUES ("/26.8046F5000000/temperature",15);
-INSERT INTO sensors (path,delay) VALUES ("/26.8046F5000000/humidity",15);
-INSERT INTO sensors (path,delay) VALUES ("/26.AF7486000000/temperature",15);
-INSERT INTO sensors (path,delay) VALUES ("/26.AF7486000000/humidity",15);
 
 GRANT ALL PRIVILEGES ON *.* TO 'weather'@'localhost' IDENTIFIED BY 'weather43'  WITH GRANT OPTION;
