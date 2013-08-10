@@ -86,7 +86,7 @@ int init_senors_list(MYSQL *con)
 	MYSQL_ROW row;
 	
 	prlog(LOG_INFO, "Init OW data logger sensors list");
-	if (mysql_query(con, "SELECT path, ratio, time FROM sensors")) 
+	if (mysql_query(con, "SELECT path, ratio, delay FROM sensors")) 
 	{
 		prlog(LOG_ALERT, "%s\n", mysql_error(con));
 		mysql_close(con);
