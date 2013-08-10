@@ -144,6 +144,8 @@ MYSQL *init_db(void)
 		prlog(LOG_ALERT,  "Install database owdatalogger %i\n",retry);
 		system("mysql < /usr/share/owdatalogger.sql");
 		sleep(5);
+		system("python /usr/bin/owinstall.py")
+		sleep(2);
 	}
 	return con;
 }
