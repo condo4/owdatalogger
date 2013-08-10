@@ -54,7 +54,10 @@ try:
 	print "Database version : %s " % ver
 	cur = con.cursor()
 	for meas in lstmeasure:
-		cur.execute(meas.getquery())
+		try:
+			cur.execute(meas.getquery())
+		except MySQLdb.Error, e:
+			print "Error %d: %s (%s)" % (e.args[0],e.args[1],meas.getquery())
 except MySQLdb.Error, e:
 	print "Error %d: %s" % (e.args[0],e.args[1])
 	sys.exit(1)
