@@ -3,11 +3,19 @@ CREATE DATABASE weather;
 USE weather;
 
 CREATE TABLE sensors (
-	name CHAR(64) NOT NULL,
 	path CHAR(64) NOT NULL,
-	ratio INT NOT NULL DEFAULT 1,
-	delay MEDIUMINT,
+	type CHAR(64) NOT NULL,
+	subtype CHAR(64),
 	PRIMARY KEY (path)
+);
+
+CREATE TABLE sensor_entry (
+	path CHAR(64) NOT NULL,
+	attr CHAR(64) NOT NULL,
+	ratio INT NOT NULL DEFAULT 1,
+	enable BOOLEAN NOT NULL DEFAULT 0,
+	delay MEDIUMINT,
+	PRIMARY KEY (path,attr)
 );
 
 CREATE TABLE measures (
@@ -15,6 +23,7 @@ CREATE TABLE measures (
 	date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
 	sync BOOLEAN NOT NULL DEFAULT 0,
 	path CHAR(64) NOT NULL,
+	attr CHAR(64) NOT NULL,
 	value FLOAT NOT NULL,
 	PRIMARY KEY (id)
 );

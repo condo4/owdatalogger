@@ -18,7 +18,8 @@
 #define LOCK_FILE	"owdatalogger.lock"
 
 struct sensor {
-	char path[256];
+	char path[128];
+	char attr[128];
 	unsigned int ratio;
 	unsigned int time;
 	struct sensor *next;
@@ -86,7 +87,7 @@ int init_senors_list(MYSQL *con)
 	MYSQL_ROW row;
 	
 	prlog(LOG_INFO, "Init OW data logger sensors list");
-	if (mysql_query(con, "SELECT path, ratio, delay FROM sensors")) 
+	if (mysql_query(con, "SELECT path, attr, ratio, delay FROM sensor_entry")) 
 	{
 		prlog(LOG_ALERT, "%s\n", mysql_error(con));
 		mysql_close(con);
@@ -106,8 +107,9 @@ int init_senors_list(MYSQL *con)
 	{
 		struct sensor *chain = (struct sensor *)malloc(sizeof(struct sensor));
 		strncpy(chain->path,row[0],254);
-		chain->ratio = atoi(row[1]);
-		chain->time = atoi(row[2]);
+		strncpy(chain->attr,row[1],254);
+		chain->ratio = atoi(row[2]);
+		chain->time = atoi(row[3]);
 		chain->next = sensors;
 		sensors = chain;
 	}
@@ -143,8 +145,6 @@ MYSQL *init_db(void)
 		}
 		prlog(LOG_ALERT,  "Install database owdatalogger %i\n",retry);
 		system("mysql < /usr/share/owdatalogger.sql");
-		sleep(5);
-		system("python /usr/bin/owinstall.py");
 		sleep(2);
 	}
 	return con;
@@ -219,9 +219,11 @@ int main(int argc, char *argv[])
 			if(counter % list->time == 0)
 			{
 				char query[128]; 
-				OW_get(list->path, &tmp, &len);
+				char fullpath[256];
+				snprintf(fullpath,256,"%s/%s",list->path, list->attr);
+				OW_get(fullpath, &tmp, &len);
 				prlog(LOG_DEBUG2, "Read %s: %f", list->path, atof(tmp));
-				snprintf(query, 128, "INSERT INTO measures (path,value) VALUES('%s', '%f')", list->path, atof(tmp) * list->ratio);
+				snprintf(query, 128, "INSERT INTO measures (path,attr,value) VALUES('%s', '%s', '%f')", list->path, list->attr, atof(tmp) * list->ratio);
 				if (mysql_query(con, query))
 				{
 					prlog(LOG_ALERT, "ERROR in query %s\n",query);
