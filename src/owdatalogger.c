@@ -106,8 +106,8 @@ int init_senors_list(MYSQL *con)
 	while ((row = mysql_fetch_row(result))) 
 	{
 		struct sensor *chain = (struct sensor *)malloc(sizeof(struct sensor));
-		strncpy(chain->path,row[0],254);
-		strncpy(chain->attr,row[1],254);
+		strncpy(chain->path,row[0],128);
+		strncpy(chain->attr,row[1],128);
 		chain->ratio = atoi(row[2]);
 		chain->time = atoi(row[3]);
 		chain->next = sensors;
